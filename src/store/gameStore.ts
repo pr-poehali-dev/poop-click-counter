@@ -30,22 +30,43 @@ export interface GameState {
   upgrades: Upgrade[];
   multiplier: number;
   autoClickRate: number;
+  totalSpent: number;
 }
 
 const ACHIEVEMENTS: Achievement[] = [
+  // — клики —
   { id: 'first', title: 'Первый контакт', description: 'Первый клик сделан!', emoji: '🖐️', requiredClicks: 1, unlocked: false },
   { id: 'ten', title: 'Десяточка', description: '10 кликов — неплохо!', emoji: '🔥', requiredClicks: 10, unlocked: false },
   { id: 'fifty', title: 'Полтинник', description: '50 кликов — ты втянулся', emoji: '⚡', requiredClicks: 50, unlocked: false },
   { id: 'hundred', title: 'Сотня', description: '100 кликов — настоящий герой', emoji: '💎', requiredClicks: 100, unlocked: false },
+  { id: 'twofifty', title: 'Четверть тысячи', description: '250 кликов — палец не устал?', emoji: '🤙', requiredClicks: 250, unlocked: false },
   { id: 'fivehundred', title: 'Повелитель', description: '500 кликов — ты одержим', emoji: '👑', requiredClicks: 500, unlocked: false },
   { id: 'thousand', title: 'Легенда', description: '1000 кликов — это нереально', emoji: '🌟', requiredClicks: 1000, unlocked: false },
+  { id: 'twothousand', title: 'Двойная легенда', description: '2 000 кликов — ты не остановишься', emoji: '🌠', requiredClicks: 2000, unlocked: false },
   { id: 'fivethousand', title: 'Бог какашки', description: '5000 кликов — ты достиг просветления', emoji: '🚀', requiredClicks: 5000, unlocked: false },
   { id: 'tenthousand', title: 'Мастер дзена', description: '10 000 кликов — медитация уровня бог', emoji: '🧘', requiredClicks: 10000, unlocked: false },
   { id: 'twentyfive', title: 'Машина смерти', description: '25 000 кликов — ты не человек', emoji: '🤖', requiredClicks: 25000, unlocked: false },
   { id: 'fifty_k', title: 'Вселенский ужас', description: '50 000 кликов — вселенная дрожит', emoji: '🌌', requiredClicks: 50000, unlocked: false },
+  { id: 'hundred_k', title: 'Сто тысяч', description: '100 000 кликов — ты серьёзен', emoji: '💯', requiredClicks: 100000, unlocked: false },
+  { id: 'half_mil', title: 'Полмиллиона', description: '500 000 кликов — ты уже не человек', emoji: '🛸', requiredClicks: 500000, unlocked: false },
+  { id: 'million', title: 'Миллионер', description: '1 000 000 кликов — добро пожаловать в клуб', emoji: '🎰', requiredClicks: 1000000, unlocked: false },
+  { id: 'five_mil', title: 'Галактический владыка', description: '5 000 000 кликов — ты за гранью', emoji: '🌠', requiredClicks: 5000000, unlocked: false },
+  { id: 'ten_mil', title: 'Абсолютный ноль', description: '10 000 000 кликов — всё теряет смысл', emoji: '♾️', requiredClicks: 10000000, unlocked: false },
+  // — прокачка —
   { id: 'speed1', title: 'Прокачан', description: 'Купи первое улучшение', emoji: '⬆️', requiredClicks: -1, unlocked: false },
   { id: 'auto1', title: 'Лентяй', description: 'Включи автокликер', emoji: '😴', requiredClicks: -2, unlocked: false },
   { id: 'multiplier3', title: 'Утроение', description: 'Множитель x3 и выше', emoji: '✖️', requiredClicks: -3, unlocked: false },
+  { id: 'multiplier10', title: 'Десятикратный', description: 'Множитель x10 и выше', emoji: '🔟', requiredClicks: -4, unlocked: false },
+  { id: 'multiplier25', title: 'Ядерный удар', description: 'Множитель x25 и выше', emoji: '☢️', requiredClicks: -5, unlocked: false },
+  { id: 'multi_max', title: 'Абсолютная сила', description: 'Прокачай Мега-бомбу до максимума', emoji: '💥', requiredClicks: -6, unlocked: false },
+  { id: 'auto_max', title: 'Завод работает', description: 'Прокачай Фабрику до максимума', emoji: '🏭', requiredClicks: -7, unlocked: false },
+  { id: 'all_upgrades', title: 'Коллекционер', description: 'Купи хотя бы 1 уровень каждого улучшения', emoji: '🎯', requiredClicks: -8, unlocked: false },
+  { id: 'auto_rate_10', title: 'Конвейер', description: 'Авто-клики 10/сек и выше', emoji: '⚙️', requiredClicks: -9, unlocked: false },
+  { id: 'auto_rate_50', title: 'Ядерный реактор', description: 'Авто-клики 50/сек и выше', emoji: '⚛️', requiredClicks: -10, unlocked: false },
+  { id: 'upgrade5', title: 'Пятёрочник', description: 'Суммарно 5 уровней улучшений', emoji: '5️⃣', requiredClicks: -11, unlocked: false },
+  { id: 'upgrade20', title: 'Двадцатка', description: 'Суммарно 20 уровней улучшений', emoji: '🏅', requiredClicks: -12, unlocked: false },
+  { id: 'big_spender', title: 'Транжира', description: 'Потрать 10 000 кликов на улучшения', emoji: '💸', requiredClicks: -13, unlocked: false },
+  { id: 'uber_spender', title: 'Мотовило', description: 'Потрать 100 000 кликов на улучшения', emoji: '🤑', requiredClicks: -14, unlocked: false },
 ];
 
 const BASE_UPGRADES: Upgrade[] = [
@@ -89,6 +110,7 @@ function loadState(): GameState {
     upgrades: BASE_UPGRADES,
     multiplier: 1,
     autoClickRate: 0,
+    totalSpent: 0,
   };
 }
 
@@ -177,20 +199,29 @@ export function useGameStore() {
     let newlyUnlocked: Achievement | null = null;
     const totalUpgradeLevels = newUpgrades.reduce((s, u) => s + u.level, 0);
     const hasAuto = newUpgrades.some(u => u.effect === 'autoclicker' && u.level > 0);
+    const totalSpent = (globalState.totalSpent ?? 0) + cost;
+    const mega = newUpgrades.find(u => u.id === 'multi3');
+    const factory = newUpgrades.find(u => u.id === 'auto2');
+    const allBought = newUpgrades.every(u => u.level > 0);
 
     const newAchievements = globalState.achievements.map(a => {
       if (a.unlocked) return a;
-      if (a.id === 'speed1' && totalUpgradeLevels >= 1) {
-        const u = { ...a, unlocked: true, unlockedAt: Date.now() };
-        newlyUnlocked = u;
-        return u;
-      }
-      if (a.id === 'auto1' && hasAuto) {
-        const u = { ...a, unlocked: true, unlockedAt: Date.now() };
-        newlyUnlocked = u;
-        return u;
-      }
-      if (a.id === 'multiplier3' && multiplier >= 3) {
+      let cond = false;
+      if (a.id === 'speed1') cond = totalUpgradeLevels >= 1;
+      else if (a.id === 'auto1') cond = hasAuto;
+      else if (a.id === 'multiplier3') cond = multiplier >= 3;
+      else if (a.id === 'multiplier10') cond = multiplier >= 10;
+      else if (a.id === 'multiplier25') cond = multiplier >= 25;
+      else if (a.id === 'multi_max') cond = !!mega && mega.level >= mega.maxLevel;
+      else if (a.id === 'auto_max') cond = !!factory && factory.level >= factory.maxLevel;
+      else if (a.id === 'all_upgrades') cond = allBought;
+      else if (a.id === 'auto_rate_10') cond = autoClickRate >= 10;
+      else if (a.id === 'auto_rate_50') cond = autoClickRate >= 50;
+      else if (a.id === 'upgrade5') cond = totalUpgradeLevels >= 5;
+      else if (a.id === 'upgrade20') cond = totalUpgradeLevels >= 20;
+      else if (a.id === 'big_spender') cond = totalSpent >= 10000;
+      else if (a.id === 'uber_spender') cond = totalSpent >= 100000;
+      if (cond) {
         const u = { ...a, unlocked: true, unlockedAt: Date.now() };
         newlyUnlocked = u;
         return u;
@@ -205,6 +236,7 @@ export function useGameStore() {
       multiplier,
       autoClickRate,
       achievements: newAchievements,
+      totalSpent,
     };
     saveState(globalState);
     notify();
@@ -226,6 +258,7 @@ export function useGameStore() {
       upgrades: BASE_UPGRADES,
       multiplier: 1,
       autoClickRate: 0,
+      totalSpent: 0,
     };
     saveState(globalState);
     notify();
