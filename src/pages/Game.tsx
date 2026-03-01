@@ -8,6 +8,7 @@ interface FloatText {
   id: number;
   x: number;
   y: number;
+  value: number;
 }
 
 interface Ring {
@@ -23,13 +24,23 @@ interface ToastNotif {
 
 export default function Game() {
   const navigate = useNavigate();
-  const { state, click } = useGameStore();
+  const { state, click, buyUpgrade } = useGameStore();
   const [floats, setFloats] = useState<FloatText[]>([]);
   const [rings, setRings] = useState<Ring[]>([]);
   const [isPressed, setIsPressed] = useState(false);
   const [toast, setToast] = useState<ToastNotif | null>(null);
+  const [showUpgrades, setShowUpgrades] = useState(false);
   const floatId = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (achievement: Achievement) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ achievement, hiding: false });
+    toastTimer.current = setTimeout(() => {
+      setToast(prev => prev ? { ...prev, hiding: true } : null);
+      setTimeout(() => setToast(null), 300);
+    }, 3000);
+  };
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -37,7 +48,7 @@ export default function Game() {
     const y = e.clientY - rect.top;
     const id = ++floatId.current;
 
-    setFloats(prev => [...prev, { id, x, y }]);
+    setFloats(prev => [...prev, { id, x, y, value: state.multiplier }]);
     setRings(prev => [...prev, { id, x, y }]);
     setIsPressed(true);
 
@@ -46,18 +57,16 @@ export default function Game() {
     setTimeout(() => setRings(prev => prev.filter(r => r.id !== id)), 600);
 
     const unlocked = click();
-    if (unlocked) {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-      setToast({ achievement: unlocked, hiding: false });
-      toastTimer.current = setTimeout(() => {
-        setToast(prev => prev ? { ...prev, hiding: true } : null);
-        setTimeout(() => setToast(null), 300);
-      }, 3000);
-    }
-  }, [click]);
+    if (unlocked) showToast(unlocked);
+  }, [click, state.multiplier]);
+
+  const handleBuy = (id: string) => {
+    const unlocked = buyUpgrade(id);
+    if (unlocked) showToast(unlocked);
+  };
 
   const unlocked = state.achievements.filter(a => a.unlocked).length;
-  const nextAchievement = state.achievements.find(a => !a.unlocked);
+  const nextAchievement = state.achievements.find(a => !a.unlocked && a.requiredClicks > 0);
   const progress = nextAchievement
     ? Math.min((state.totalClicks / nextAchievement.requiredClicks) * 100, 100)
     : 100;
@@ -87,32 +96,40 @@ export default function Game() {
         </button>
       </nav>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 px-4 py-6">
-        <div className="flex gap-6 text-center">
-          <div className="card-glass rounded-2xl px-6 py-3">
-            <div className="text-3xl font-black" style={{ color: 'hsl(35 100% 65%)' }}>
-              {state.clicks.toLocaleString('ru')}
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4 py-6">
+        <div className="flex gap-3 text-center flex-wrap justify-center">
+          <div className="card-glass rounded-2xl px-5 py-3">
+            <div className="text-2xl font-black" style={{ color: 'hsl(35 100% 65%)' }}>
+              {Math.floor(state.clicks).toLocaleString('ru')}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">кликов</div>
           </div>
-          <div className="card-glass rounded-2xl px-6 py-3">
-            <div className="text-3xl font-black" style={{ color: 'hsl(300 60% 65%)' }}>
-              {state.totalClicks.toLocaleString('ru')}
+          <div className="card-glass rounded-2xl px-5 py-3">
+            <div className="text-2xl font-black" style={{ color: 'hsl(300 60% 65%)' }}>
+              {Math.floor(state.totalClicks).toLocaleString('ru')}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">всего</div>
           </div>
-          <div className="card-glass rounded-2xl px-6 py-3">
-            <div className="text-3xl font-black" style={{ color: 'hsl(120 60% 55%)' }}>
-              {unlocked}
+          <div className="card-glass rounded-2xl px-5 py-3">
+            <div className="text-2xl font-black" style={{ color: 'hsl(120 60% 55%)' }}>
+              x{state.multiplier}
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">бейджей</div>
+            <div className="text-xs text-muted-foreground mt-0.5">множитель</div>
           </div>
+          {state.autoClickRate > 0 && (
+            <div className="card-glass rounded-2xl px-5 py-3">
+              <div className="text-2xl font-black" style={{ color: 'hsl(200 80% 60%)' }}>
+                {state.autoClickRate}/с
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">авто</div>
+            </div>
+          )}
         </div>
 
         <div className="relative">
           <button
             onClick={handleClick}
-            className="relative w-48 h-48 rounded-full flex items-center justify-center transition-transform duration-100 select-none focus:outline-none"
+            className="relative w-48 h-48 rounded-full flex items-center justify-center select-none focus:outline-none"
             style={{
               background: 'radial-gradient(circle at 35% 35%, hsl(35 60% 25%), hsl(25 70% 15%))',
               boxShadow: isPressed
@@ -146,26 +163,104 @@ export default function Game() {
               className="float-text"
               style={{ left: f.x, top: f.y - 20 }}
             >
-              +1
+              +{f.value}
             </span>
           ))}
         </div>
 
-        <button
-          onClick={() => navigate('/stats')}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
-          style={{
-            background: 'linear-gradient(135deg, hsl(35 100% 60% / 0.2), hsl(300 60% 55% / 0.15))',
-            border: '1px solid hsl(35 100% 60% / 0.35)',
-            color: 'hsl(35 100% 70%)',
-            boxShadow: '0 0 20px hsl(35 100% 50% / 0.15)',
-          }}
-        >
-          <Icon name="Trophy" size={16} />
-          Достижения · {unlocked} / {state.achievements.length}
-        </button>
+        <div className="flex gap-3 flex-wrap justify-center">
+          <button
+            onClick={() => navigate('/stats')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, hsl(35 100% 60% / 0.15), hsl(300 60% 55% / 0.1))',
+              border: '1px solid hsl(35 100% 60% / 0.3)',
+              color: 'hsl(35 100% 70%)',
+            }}
+          >
+            <Icon name="Trophy" size={16} />
+            Достижения · {unlocked} / {state.achievements.length}
+          </button>
 
-        {nextAchievement && (
+          <button
+            onClick={() => setShowUpgrades(v => !v)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              background: showUpgrades
+                ? 'linear-gradient(135deg, hsl(200 80% 50% / 0.3), hsl(260 70% 55% / 0.2))'
+                : 'linear-gradient(135deg, hsl(200 80% 50% / 0.15), hsl(260 70% 55% / 0.1))',
+              border: '1px solid hsl(200 80% 55% / 0.35)',
+              color: 'hsl(200 80% 70%)',
+            }}
+          >
+            <Icon name="Zap" size={16} />
+            Прокачка
+          </button>
+        </div>
+
+        {showUpgrades && (
+          <div className="w-full max-w-sm space-y-2">
+            <div className="text-xs text-muted-foreground text-center mb-1">
+              Потрать клики на улучшения
+            </div>
+            {state.upgrades.map(u => {
+              const cost = Math.floor(u.cost * Math.pow(1.8, u.level));
+              const canAfford = state.clicks >= cost;
+              const maxed = u.level >= u.maxLevel;
+              return (
+                <button
+                  key={u.id}
+                  onClick={() => !maxed && handleBuy(u.id)}
+                  disabled={!canAfford || maxed}
+                  className="w-full flex items-center gap-3 rounded-xl p-3 transition-all duration-200 text-left"
+                  style={{
+                    background: maxed
+                      ? 'hsl(120 40% 15% / 0.4)'
+                      : canAfford
+                        ? 'linear-gradient(135deg, hsl(200 70% 20% / 0.4), hsl(260 60% 20% / 0.3))'
+                        : 'hsl(240 10% 15%)',
+                    border: maxed
+                      ? '1px solid hsl(120 40% 35% / 0.4)'
+                      : canAfford
+                        ? '1px solid hsl(200 70% 50% / 0.4)'
+                        : '1px solid hsl(240 10% 22%)',
+                    opacity: !canAfford && !maxed ? 0.5 : 1,
+                    cursor: maxed || !canAfford ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <span className="text-2xl">{u.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      {u.title}
+                      <span className="text-xs px-1.5 py-0.5 rounded-md"
+                        style={{
+                          background: 'hsl(240 10% 20%)',
+                          color: 'hsl(240 20% 60%)',
+                        }}>
+                        {u.level}/{u.maxLevel}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{u.description}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {maxed ? (
+                      <span className="text-xs font-bold" style={{ color: 'hsl(120 60% 55%)' }}>МАКС</span>
+                    ) : (
+                      <div>
+                        <div className="text-sm font-bold" style={{ color: canAfford ? 'hsl(200 80% 65%)' : 'hsl(240 20% 50%)' }}>
+                          {cost.toLocaleString('ru')}
+                        </div>
+                        <div className="text-xs text-muted-foreground">кликов</div>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {!showUpgrades && nextAchievement && (
           <div className="w-full max-w-sm card-glass rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -176,7 +271,7 @@ export default function Game() {
                 </div>
               </div>
               <div className="text-xs text-muted-foreground text-right">
-                {state.totalClicks} / {nextAchievement.requiredClicks}
+                {Math.floor(state.totalClicks)} / {nextAchievement.requiredClicks}
               </div>
             </div>
             <div className="w-full h-2 rounded-full" style={{ background: 'hsl(240 10% 18%)' }}>

@@ -48,7 +48,7 @@ export default function Stats() {
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 space-y-6">
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Всего кликов', value: state.totalClicks.toLocaleString('ru'), color: 'hsl(35 100% 65%)', icon: '💩' },
+            { label: 'Всего кликов', value: Math.floor(state.totalClicks).toLocaleString('ru'), color: 'hsl(35 100% 65%)', icon: '💩' },
             { label: 'Достижений', value: `${unlocked.length} / ${state.achievements.length}`, color: 'hsl(300 60% 65%)', icon: '🏆' },
             { label: 'Минут в игре', value: sessionTime.toString(), color: 'hsl(180 60% 55%)', icon: '⏱️' },
           ].map(stat => (
