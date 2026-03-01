@@ -183,6 +183,19 @@ export default function Game() {
           </button>
 
           <button
+            onClick={() => navigate('/leaderboard')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, hsl(45 100% 55% / 0.15), hsl(35 100% 55% / 0.1))',
+              border: '1px solid hsl(45 100% 55% / 0.3)',
+              color: 'hsl(45 100% 70%)',
+            }}
+          >
+            <Icon name="Crown" size={16} />
+            Топ игроков
+          </button>
+
+          <button
             onClick={() => setShowUpgrades(v => !v)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
             style={{
