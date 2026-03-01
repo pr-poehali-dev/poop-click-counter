@@ -151,6 +151,20 @@ export default function Game() {
           ))}
         </div>
 
+        <button
+          onClick={() => navigate('/stats')}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, hsl(35 100% 60% / 0.2), hsl(300 60% 55% / 0.15))',
+            border: '1px solid hsl(35 100% 60% / 0.35)',
+            color: 'hsl(35 100% 70%)',
+            boxShadow: '0 0 20px hsl(35 100% 50% / 0.15)',
+          }}
+        >
+          <Icon name="Trophy" size={16} />
+          Достижения · {unlocked} / {state.achievements.length}
+        </button>
+
         {nextAchievement && (
           <div className="w-full max-w-sm card-glass rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
